@@ -8,14 +8,20 @@ const router = createBrowserRouter([
   {
     path: '/',
     Component: lazy(modules['../views/Index.tsx']),
-    children: [{
-      path: 'myview',
-      Component: lazy(modules['../views/pages/MyView.tsx'])
-    }]
+    children: [
+      {
+        path: 'myview',
+        Component: lazy(modules['../views/pages/MyView.tsx'])
+      }
+    ]
   },
   {
     path: '/login',
     Component: lazy(modules['../views/Login.tsx'])
+  },
+  {
+    path: '/test',
+    Component: lazy(modules['../views/pages/Test.tsx'])
   }
 ])
 

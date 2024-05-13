@@ -1,0 +1,45 @@
+:root {
+  --spacer: 1rem;
+  --message-padding-x: 1.5rem;
+  --message-padding-y: 0.75rem;
+  --message-margin-y: 0.75rem;
+  --message-icon-margin-x: calc(var(--spacer)/2);
+  --message-backgounrd-color: rgb(255,255,255);
+  --message-radius: 0.5rem;
+  --message-color: rgb(41, 41, 41);
+  --message-box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.1);
+}
+
+.message-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  z-index: 1050;
+
+
+  &,
+  .message {
+    pointer-events: none;
+  }
+
+  .message {
+
+    text-align: center;
+    margin-top:var(--message-margin-y);
+    margin-bottom:var(--message-margin-y);
+
+    .message-content {
+      display: inline-flex;
+      padding:var(--message-padding-y) var(--message-padding-x);
+      background:var(--message-backgounrd-color);
+      border-radius: var(--message-radius);
+      color: var(--message-color);
+      box-shadow: var(--message-box-shadow);
+      .icon {
+        margin-right:var(--message-icon-margin-x);
+      }
+    }
+  }
+}
+

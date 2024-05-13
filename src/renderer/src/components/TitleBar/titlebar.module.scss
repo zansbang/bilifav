@@ -1,0 +1,7 @@
+.titleBar {
+  app-region: drag;
+  user-select: none;
+  svg {
+    app-region: no-drag;
+  }
+}

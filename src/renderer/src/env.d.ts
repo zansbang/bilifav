@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_APP_TITLE: string
+  readonly RENDERER_VITE_BASE_URL: string
   // 更多环境变量...
 }
 
