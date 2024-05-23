@@ -8,12 +8,13 @@ import { far } from '@fortawesome/free-regular-svg-icons'
 import { NextUIProvider } from '@nextui-org/react'
 import App from './App'
 
+// @ts-ignore
 library.add(fas, far)
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  // <React.StrictMode>
-  <NextUIProvider>
-    <App />
-  </NextUIProvider>
-  // </React.StrictMode>
+  <React.StrictMode>
+    <NextUIProvider>
+      <App />
+    </NextUIProvider>
+  </React.StrictMode>
 )

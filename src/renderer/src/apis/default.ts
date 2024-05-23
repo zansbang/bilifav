@@ -35,7 +35,7 @@ const apis = {
    * 注销登录
    * @param params 请求参数 {@link LogoutParams}
    */
-  logout: <T, R>(params: R): Promise<T> => req.post('https://passport.bilibili.com/login/exit/v2', params),
+  logout: <T, R>(params: R): Promise<T> => req.post('https://passport.bilibili.com/login/exit/v2', params,{headers:{'Content-Type': 'application/x-www-form-urlencoded'}}),
   /**
    * 用户信息,仅可Cookie（SESSDATA）
    */

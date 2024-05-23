@@ -1,5 +1,6 @@
-import axios, { AxiosRequestConfig, AxiosRequestHeaders } from 'axios'
+import axios, { AxiosRequestConfig } from 'axios'
 import router from '../router'
+import message from '../components/Message'
 
 //process.env.NODE_ENV 判断是否为开发环境 根据不同环境使用不同的baseURL 方便调试
 const defaultRequestConfig: AxiosRequestConfig = {
@@ -15,9 +16,9 @@ const defaultRequestConfig: AxiosRequestConfig = {
 //创建axios实例
 const axiosInstance = axios.create(defaultRequestConfig)
 
+//
+
 //统一请求拦截 可配置自定义headers 例如 language、token等
-
-
 //核心处理代码 将返回一个promise 调用then将可获取响应的业务数据
 const requestHandler = <T, R>(
   method: 'get' | 'post' | 'put' | 'delete',
@@ -27,6 +28,7 @@ const requestHandler = <T, R>(
   customConfig: AxiosRequestConfig = {}
 ): Promise<T> => {
   let response: Promise<axiosTypes<responseTypes<T>>>
+
   /*axiosInstance.interceptors.request.use(
     (config: AxiosRequestConfig) => {
       Object.assign(config, customConfig)
@@ -76,11 +78,12 @@ const requestHandler = <T, R>(
             message: '',
             data: res.data
           }
+          // @ts-ignore
           return resolve(reData.data)
-
         }
 
         if (res.headers['content-type'].indexOf('image') !== -1) {
+          // @ts-ignore
           return resolve(data)
         }
         if (data.code !== 0) {
@@ -93,10 +96,9 @@ const requestHandler = <T, R>(
             router.navigate('/login')
           }
 
-
           if (data.code === undefined) {
+            // @ts-ignore
             return resolve(data)
-
           }
 
           const e = JSON.stringify(data)
@@ -105,14 +107,20 @@ const requestHandler = <T, R>(
           //数据请求错误 使用reject将错误返回
           return reject(data)
         } else {
+          //有时候返回code是0，但是获取收藏视频列表为null的情况，需要重新请求一次
+          // @ts-ignore
+          if (url.includes('resource/list') && data.data.medias === null) {
+            requestHandler(method, url, path, params, customConfig)
+            return reject(data)
+          }
+
           //数据请求正确 使用resolve将结果返回
           return resolve(data.data)
         }
       })
       .catch((error) => {
         const e = JSON.stringify(error)
-
-        console.log(`网络错误：${e}`)
+        message.error(`网络错误：${e}`)
         return reject(error)
       })
   })
@@ -128,7 +136,8 @@ const req = {
     requestHandler<T, R>('put', url, path, params, config),
   delete: <T, R>(url: string, params?: R, config?: AxiosRequestConfig, path?: string): Promise<T> =>
     requestHandler<T, R>('delete', url, path, params, config),
-  download: (url: string): Promise<any> => requestHandler('get', url, '', undefined, { responseType: 'arraybuffer' })
+  download: (url: string): Promise<never> =>
+    requestHandler('get', url, '', undefined, { responseType: 'arraybuffer' })
 }
 
 // 导出至外层，方便统一使用

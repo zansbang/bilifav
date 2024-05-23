@@ -1,11 +1,11 @@
-import { ReactElement, useRef, useState } from 'react'
+import { ReactElement, useState } from 'react'
 import titleBarStyles from './titlebar.module.scss'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
-function TitleBar(props: any): ReactElement | null {
+function TitleBar(): ReactElement | null {
   const [isMaximized, setIsMaximized] = useState(false)
-  const startMove = useRef(false)
-  const winXY = useRef({ x: 0, y: 0 })
+  // const startMove = useRef(false)
+  // const winXY = useRef({ x: 0, y: 0 })
 
   function ctrlWindow(type: string): void {
     switch (type) {
@@ -27,6 +27,7 @@ function TitleBar(props: any): ReactElement | null {
     }
   }
 
+/*
   async function handleMouseDown(e: any): void {
     startMove.current = true
     console.log('window.api.getWindowXY()',await window.api.getWindowXY())
@@ -41,6 +42,7 @@ function TitleBar(props: any): ReactElement | null {
     startMove.current = false
   }
   function handleDblClick(e: any): void {}
+*/
 
 
   return (
@@ -55,9 +57,13 @@ function TitleBar(props: any): ReactElement | null {
       <div className="space-x-4">
         <FontAwesomeIcon icon="minus" className="hover:text-emerald-600" onClick={()=> ctrlWindow('min')} />
         {isMaximized ? (
-          <FontAwesomeIcon icon="fa-regular fa-window-restore" className="hover:text-emerald-600" onClick={()=> ctrlWindow('restore')} />
+          <FontAwesomeIcon
+            icon="window-restore"
+            className="hover:text-emerald-600"
+            onClick={() => ctrlWindow('restore')}
+          />
         ) : (
-          <FontAwesomeIcon icon="fa-regular fa-square" className="hover:text-emerald-600" onClick={()=> ctrlWindow('max')} />
+          <FontAwesomeIcon icon={['far','square']} className="hover:text-emerald-600" onClick={()=> ctrlWindow('max')} />
         )}
         <FontAwesomeIcon icon="xmark" className="hover:text-emerald-600" onClick={()=> ctrlWindow('close')} />
       </div>

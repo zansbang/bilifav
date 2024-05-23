@@ -4,7 +4,7 @@ interface Window {
     /** 设置全局参数 */
     setGlobal: (...args: never) => void
     /** 获取全局参数 */
-    getGlobal: () => Promise<void>
+    getGlobal: () => Promise<Global>
     /** 获取cookie */
     getCookie: () => Promise<BiliCookie>
     /** 清除全部cookie */
@@ -35,4 +35,9 @@ interface Window {
     /** 播放bv */
     playBV: (bvId: string) => void
   }
+}
+
+interface Global {
+  isPackaged: boolean
+  coverPath: string
 }

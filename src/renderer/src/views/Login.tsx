@@ -63,7 +63,7 @@ function Login(): ReactElement | null {
   }, [])
 
   return (
-    <>
+    <div className="flex justify-center items-center h-[100vh]">
       <Tooltip color={'primary'} content={qrTipText}>
         <Card shadow="sm" isPressable onPress={refreshQR}>
           <CardBody>
@@ -83,7 +83,7 @@ function Login(): ReactElement | null {
           </CardBody>
         </Card>
       </Tooltip>
-    </>
+    </div>
   )
 }
 

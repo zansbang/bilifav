@@ -1,10 +1,11 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, createHashRouter } from 'react-router-dom'
 import { lazy } from 'react'
 
-const modules = import.meta.glob('../views/**/*.tsx') as any
+const modules = import.meta.glob('../views/**/*.tsx') as never
 
-
-const router = createBrowserRouter([
+//Electron 下不能使用 createBrowserRouter
+const global: Global = await window.api.getGlobal()
+const routerConfig = [
   {
     path: '/',
     Component: lazy(modules['../views/Index.tsx']),
@@ -18,11 +19,10 @@ const router = createBrowserRouter([
   {
     path: '/login',
     Component: lazy(modules['../views/Login.tsx'])
-  },
-  {
-    path: '/test',
-    Component: lazy(modules['../views/pages/Test.tsx'])
   }
-])
+]
+const router = global.isPackaged
+  ? createHashRouter(routerConfig)
+  : createBrowserRouter(routerConfig)
 
 export default router

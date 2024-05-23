@@ -14,19 +14,16 @@ class LowWithLodash<T> extends LowSync<T> {
 }
 
 function convertStrKeyToNumKey(obj): FavVideosListCache {
+  // @ts-ignore
   return new Map(Object.entries(obj).map(([key, value]) => [Number(key), value]))
 }
 
 let db: LowSync<Data>
 
 function initDb(): void {
-  const adapter = new JSONFileSync<Data>('src/main/db/bilifav.json')
+  const adapter = new JSONFileSync<Data>('db/bilifav.json')
   db = new LowWithLodash(adapter, defaultData)
   db.read()
-  // const db = JSONFileSyncPreset('bilifav.json', { test: [1,2,3] })
-  // db.read()
-  // db.data = { test: [4,5,6] }
-  // db.write()
 }
 
 parentPort!.on('message', async (dbReq: DbReq<FavVideosInfoListCache>) => {
@@ -35,10 +32,12 @@ parentPort!.on('message', async (dbReq: DbReq<FavVideosInfoListCache>) => {
       initDb()
       break
     case 'setFavVideosListData':
+      // @ts-ignore
       db.data.fav_videos_list = Object.fromEntries(dbReq.data!)
       db.write()
       break
     case 'updateFavVideosListData':
+      // @ts-ignore
       db.data.fav_videos_list = Object.assign(db.data.fav_videos_list, Object.fromEntries(dbReq.data!))
       db.write()
       break
@@ -51,6 +50,7 @@ parentPort!.on('message', async (dbReq: DbReq<FavVideosInfoListCache>) => {
       break
     case 'updateFavVideosInfoListDataByFavId':
       // console.log('dbReq.data',dbReq.data)
+      // @ts-ignore
       db.data.fav_videos_info_list[dbReq.params] = dbReq.data!
       db.write()
       break

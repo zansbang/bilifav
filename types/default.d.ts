@@ -374,3 +374,31 @@ interface DelFromFavParams {
   platform?: string
   csrf: string
 }
+
+/**
+ * 新增/编辑收藏夹分类请求参数
+ * @member media_id 目标收藏夹id
+ * @member title 收藏夹标题
+ * @member intro 收藏夹简介
+ * @member privacy 收藏夹隐私 0:公开 1:私密
+ * @member cover 收藏夹封面url
+ * @member csrf CSRF Token（位于cookie）,bili_jct 就是csrftoken
+ */
+interface AddEditFavParams {
+  media_id?: number
+  title: string
+  intro?: string
+  privacy?: number
+  cover?: string
+  csrf: string
+}
+
+/**
+ * 删除收藏夹分类请求参数
+ * @member media_ids 目标收藏夹id列表,用逗号分隔
+ * @member csrf CSRF Token（位于cookie）,bili_jct 就是csrftoken
+ */
+interface DelFavParams {
+  media_ids: number
+  csrf: string
+}

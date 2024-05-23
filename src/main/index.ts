@@ -1,15 +1,18 @@
-import { app, shell, BrowserWindow, ipcMain, session, screen, net } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, session, shell } from 'electron'
 import { join } from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import Store from 'electron-store'
 import DbWorker from './worker/dbWorker?nodeWorker'
 import * as fs from 'node:fs'
-import got from 'got'
+import * as path from 'node:path'
+import { setMaxListeners } from 'events'
 
 let mainWindow: BrowserWindow
-const global = { coverPath: join(app.getAppPath(), 'cover\\') }
-
+//当前应用的目录
+const appPath = app.isPackaged ? path.dirname(app.getPath('exe')) : app.getAppPath()
+const global = { isPackaged: app.isPackaged, coverPath: join(appPath, 'cover\\') }
+setMaxListeners(Infinity)
 function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -36,10 +39,11 @@ function createWindow(): void {
     }
   })
   Store.initRenderer()
-  const store = new Store()
+  const store: Store<Record<string, Electron.Cookie[]>> = new Store()
   const cookieStoreKey = 'cookies.mainWindow'
   const cookiesWatch = new Promise<void>((resolve) => {
-    const cookies: Array<object> = (store.get(cookieStoreKey) as Array<object>) || []
+    const cookies: Array<Electron.Cookie> =
+      (store.get(cookieStoreKey) as Array<Electron.Cookie>) || []
     let recoverTimes = cookies.length
     if (recoverTimes <= 0) {
       //无cookie数据无需恢复现场
@@ -57,8 +61,7 @@ function createWindow(): void {
             url: (secure ? 'https://' : 'http://') + domain.replace(/^\./, '') + path
           })
         )
-        .then(() => {
-        })
+        .then(() => {})
         .catch((e) => {
           console.error({
             message: '恢复cookie失败',
@@ -137,12 +140,11 @@ function createWindow(): void {
     mainWindow.show()
   })
 
-
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
   })
-  mainWindow.webContents.openDevTools({mode: 'bottom'})
+  // mainWindow.webContents.openDevTools({ mode: 'bottom' })
 
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
@@ -153,8 +155,9 @@ function createWindow(): void {
   }
 }
 
-function openChildWindow(bvId:string): void {
-  let childWindow = new BrowserWindow({
+//打开新窗口，用来播放bili视频
+function openChildWindow(bvId: string): void {
+  let childWindow: BrowserWindow | null = new BrowserWindow({
     width: 1920,
     height: 920,
     // parent: mainWindow,
@@ -173,7 +176,7 @@ function openChildWindow(bvId:string): void {
 
   childWindow.loadURL(`https://www.bilibili.com/video/${bvId}`)
 
-  childWindow.on('close', ()=> {
+  childWindow.on('close', () => {
     childWindow = null
   })
 }
@@ -192,24 +195,24 @@ app.whenReady().then(async () => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  const dbWorker = new DbWorker({})
+  const dbWorker = DbWorker({})
   dbWorker.postMessage({ type: 'initDb' })
   dbWorker.on('message', async (e) => {
-    switch (e.type){
+    switch (e.type) {
       case 'setLocalCover':
-        console.log('接收worker回调:',e.type)
-        ipcMain.emit(e.type, '_event',e.data)
+        console.log('接收worker回调:', e.type)
+        ipcMain.emit(e.type, '_event', e.data)
         break
+      case 'getLocalCover':
+        console.log('接收worker回调:', e.type)
+        ipcMain.emit(e.type, '_event', e.data)
       default:
     }
   })
 
-  console.log('app.getpath',app.getAppPath())
-  console.log('fs.existsSync(join(app.getAppPath(),\'cover\'))',fs.existsSync(join(app.getAppPath(),'cover')))
-
+  //获取cookie
   async function getCookies(): Promise<NonNullable<unknown>> {
-    const cookies = await mainWindow.webContents.session.cookies
-      .get({})
+    const cookies = await mainWindow.webContents.session.cookies.get({})
     // console.log('main-getCookie', cookies)
     const cookiesObj = {}
     cookies.forEach((item) => {
@@ -219,28 +222,31 @@ app.whenReady().then(async () => {
   }
 
   //创建视频封面保存目录
-  if(!fs.existsSync(join(app.getAppPath(),'cover'))){
-    fs.mkdirSync(join(app.getAppPath(), 'cover'), { recursive: true })
+  if (!fs.existsSync(join(appPath, 'cover'))) {
+    fs.mkdirSync(join(appPath, 'cover'), { recursive: true })
   }
 
-  // IPC
+  //创建本地数据库目录
+  if (!fs.existsSync(join(appPath, 'db'))) {
+    fs.mkdirSync(join(appPath, 'db'), { recursive: true })
+  }
 
-  ipcMain.on('maxWindow',()=>{
+  ipcMain.on('maxWindow', () => {
     mainWindow.maximize()
   })
-  ipcMain.on('minWindow',()=>{
+  ipcMain.on('minWindow', () => {
     mainWindow.minimize()
   })
-  ipcMain.on('closeWindow',()=>{
+  ipcMain.on('closeWindow', () => {
     mainWindow.close()
   })
-  ipcMain.on('restoreWindow',()=>{
+  ipcMain.on('restoreWindow', () => {
     mainWindow.restore()
   })
 
   let curWinWidth = 0
   let curWinHeight = 0
-  ipcMain.handle('getWindowXY',()=>{
+  ipcMain.handle('getWindowXY', () => {
     const winPosition = mainWindow.getPosition()
     const cursorPosition = screen.getCursorScreenPoint()
     const x = cursorPosition.x - winPosition[0]
@@ -250,7 +256,7 @@ app.whenReady().then(async () => {
     return { x, y }
   })
 
-  ipcMain.on('moveWindow',(_event,args)=>{
+  ipcMain.on('moveWindow', (_event, args) => {
     mainWindow.setBounds({
       width: curWinWidth,
       height: curWinHeight,
@@ -259,11 +265,11 @@ app.whenReady().then(async () => {
     })
   })
 
-
   ipcMain.handle('getCookie', () => {
     return getCookies()
   })
 
+  //清除cookie
   ipcMain.on('cleanCookie', () => {
     mainWindow.webContents.session.cookies
       .get({})
@@ -284,78 +290,88 @@ app.whenReady().then(async () => {
       })
   })
 
+  //设置全局变量
   ipcMain.on('setGlobal', (_event, args) => {
     Object.assign(global, args)
     console.log('main-setGlobal', global)
   })
 
+  //获取全局变量
   ipcMain.handle('getGlobal', () => {
     return global
   })
 
   //获取本地图片封面
-  ipcMain.handle('getLocalCover',(_event,args)=>{
+  ipcMain.handle('getLocalCover', (_event, args) => {
     const path = global.coverPath + args.fileName
     console.log('main-getLocalCover', path)
-    return new Promise<string>((resolve, reject) => {
+    return new Promise<string>((resolve) => {
       fs.stat(path, (err, stat) => {
         if (err) {
           console.error(err)
-          return resolve()
+          return resolve('err')
         }
         // 检查文件类型
         if (stat.isFile() && /(\.jpg|\.jpeg|\.png|\.gif)$/.test(args.fileName)) {
           fs.readFile(path, (err, data) => {
             if (err) {
               console.log(err)
-              return resolve()
+              return resolve('success')
             } else {
               const fileType = args.fileName.split('.')[1]
               // 转成base64
-              return resolve(`data:image/${fileType};base64,${data.toString('base64')}`)
+              const base64Data = `data:image/${fileType};base64,${data.toString('base64')}`
+              dbWorker.postMessage(base64Data)
+              return resolve(base64Data)
             }
           })
         }
       })
     })
-
   })
 
+  ipcMain.on('getLocalCover', (_event, args) => {
+    const path = global.coverPath + args
+    console.log('dbWorker-args', args)
+    new Promise<string>((resolve) => {
+      fs.stat(path, (err, stat) => {
+        if (err) {
+          console.error(err)
+          return resolve('err')
+        }
+        // 检查文件类型
+        if (stat.isFile() && /(\.jpg|\.jpeg|\.png|\.gif)$/.test(args)) {
+          fs.readFile(path, (err, data) => {
+            if (err) {
+              console.log(err)
+              return resolve('success')
+            } else {
+              const fileType = args.split('.')[1]
+              // 转成base64
+              const base64Data = `data:image/${fileType};base64,${data.toString('base64')}`
+              dbWorker.postMessage(base64Data)
+              return resolve(base64Data)
+            }
+          })
+        }
+      })
+    })
+  })
 
   //将获取图片请求放到worker中执行
-
-  ipcMain.on('saveAllCovers',(_event,args) => {
+  ipcMain.on('saveAllCovers', (_event, args) => {
     dbWorker.postMessage(args)
   })
 
-
-/*
-  const request = net.request('http://i0.hdslb.com/bfs/archive/59e0861c4edb439a7d7cc7bb06e974b0ee740110.jpg')
-  request.on('response', (response) => {
-    console.log(`STATUS: ${response.statusCode}`)
-    console.log(`HEADERS: ${JSON.stringify(response.headers)}`)
-    response.on('data', (chunk) => {
-      console.log(`接受到数据: ${chunk.toString('base64')}`)
-    })
-    response.on('end', () => {
-      console.log('数据接受完成.')
-    })
-  })
-  //结束请求
-  request.end()
-*/
-
   //保存图片封面到本地
-
-  ipcMain.on('setLocalCover',(_event, args) => {
+  ipcMain.on('setLocalCover', (_event, args) => {
     if (!fs.existsSync(global.coverPath + args.fileName)) {
       // 保存文件
-      fs.writeFile(global.coverPath+args.fileName, args.base64Data, "base64", (err) => {
+      fs.writeFile(global.coverPath + args.fileName, args.base64Data, 'base64', (err) => {
         if (err) {
           console.log('报错：', err)
         } else {
-          console.log(global.coverPath+args.fileName+ " 文件保存成功")
-          dbWorker.postMessage({ type:'setLocalCoverCallback', status:0, data:{fileName:args.fileName} })
+          console.log(global.coverPath + args.fileName + ' 文件保存成功')
         }
       })
     } else {
@@ -363,13 +379,14 @@ app.whenReady().then(async () => {
     }
   })
 
-
+  //存储数据到本地
   ipcMain.on('setData', (_event, args) => {
     // console.log('main-setData', args)
     dbWorker.postMessage(args)
   })
 
-  ipcMain.handle('getData', (event, args) => {
+  //获取本地数据
+  ipcMain.handle('getData', (_event, args) => {
     console.log('main-getData', args)
     dbWorker.postMessage(args)
     return new Promise((resolve) => {
@@ -379,13 +396,19 @@ app.whenReady().then(async () => {
     })
   })
 
-  ipcMain.on('playBV',(_event, args) => {
+  //播放视频
+  ipcMain.on('playBV', (_event, args) => {
     openChildWindow(args)
+  })
+
+  ipcMain.on('test',()=>{
+    console.log('test')
+    dbWorker.postMessage('test')
   })
 
   createWindow()
 
-  app.on('activate', function() {
+  app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
